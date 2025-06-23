@@ -79,4 +79,57 @@ class UTG900E:
     def set_fall_time(self, channel, fall_s):
         self.write(f":CHANnel{channel}:PULSe:FALL {fall_s}")
 
+    # --- Universal signal setting methods ---
+
+    def configure_waveform(self, channel=1, waveform="SINE", mode="CONTinue", **kwargs):
+        """
+        Universal signal configurator
+
+        Examples of parameters in **kwargs:
+        - freq (Hz)
+        - amplitude (V)
+        - offset (V)
+        - phase (deg)
+        - duty (%, only for SQUARE and PULSE)
+        - symmetry (%, for RAMP only)
+        - rise_time (s, for PULSE only)
+        - fall_time (s, for PULSE only)Low-level commands
+        """
+        self.set_mode(channel, mode)
+        self.set_waveform(channel, waveform)
+
+        if "freq" in kwargs:
+            self.set_frequency(channel, kwargs["freq"])
+        if "amplitude" in kwargs:
+            self.set_amplitude(channel, kwargs["amplitude"])
+        if "offset" in kwargs:
+            self.set_offset(channel, kwargs["offset"])
+        if "phase" in kwargs:
+            self.set_phase(channel, kwargs["phase"])
+
+        wave = waveform.upper()
+        if wave in ("SQU", "SQUARE", "PULSE") and "duty" in kwargs:
+            self.set_duty(channel, kwargs["duty"])
+        if wave == "RAMP" and "symmetry" in kwargs:
+            self.set_symmetry(channel, kwargs["symmetry"])
+        if wave == "PULSE":
+            if "rise_time" in kwargs:
+                self.set_rise_time(channel, kwargs["rise_time"])
+            if "fall_time" in kwargs:
+                self.set_fall_time(channel, kwargs["fall_time"])
+
+    # --- Presett methods ---
+
+    def configure_sine(self, channel=1, **kwargs):
+        self.configure_waveform(channel, waveform="SINE", **kwargs)
+
+    def configure_square(self, channel=1, **kwargs):
+        self.configure_waveform(channel, waveform="SQUARE", **kwargs)
+
+    def configure_ramp(self, channel=1, **kwargs):
+        self.configure_waveform(channel, waveform="RAMP", **kwargs)
+
+    def configure_pulse(self, channel=1, **kwargs):
+        self.configure_waveform(channel, waveform="PULSE", **kwargs)
+
     
