@@ -101,8 +101,8 @@ class UTG900E:
 
         if "freq" in kwargs:
             self.set_frequency(channel, kwargs["freq"])
-        if "amplitude" in kwargs:
-            self.set_amplitude(channel, kwargs["amplitude"])
+        if "amp" in kwargs:
+            self.set_amplitude(channel, kwargs["amp"])
         if "offset" in kwargs:
             self.set_offset(channel, kwargs["offset"])
         if "phase" in kwargs:
@@ -138,23 +138,18 @@ class UTG900E:
 if __name__ == "__main__":
     # Set device address
     device_address = 'USB0::0x6656::0x0834::AWG1524090001::INSTR'
-
     gen = UTG900E(device_address)
-
+    gen.reset()
     print("IDN:", gen.identify())
-
-    # Set square signal on CH1 channel
     gen.configure_square(
         channel=1,
-        freq=1000,
-        amplitude=3.3,
-        offset=0.0,
-        phase=45,
-        duty=30
+        freq=1000.001000,
+        amp=2,
+        offset=0.45,
+        phase=-18.3,
+        duty=55.5
     )
-
     gen.set_output(1, True)
     input("Press Enter for signal disable...")
     gen.set_output(1, False)
     gen.close()
- 
