@@ -43,8 +43,60 @@ class UTG900E:
 
     # --- Low-level commands (SCPI wrappers) ---
 
-    def set_output(self, channel, state=True):
+    def set_output(self, channel: int, state=True):
         self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
+
+    def set_inversion(self, channel: int, inversion=False):
+        """
+         Function
+            Set the specified channel reverse ON (True) / OFF (False).
+         Example
+            gen.set_inversion(1, True)
+            Set the reverse output of channel 1 ON
+        """
+        self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
+
+
+    def get_inversion(self, channel: int):
+        """
+         Function
+            Returns the specified channel reverse, 0 in OFF, 1 in ON.
+         Example
+            gen.set_inversion(1, True)
+            gen.get_inversion(1)
+            Returns 1, because channel 1 is reversed
+        """
+        return self.query(f":CHANnel{channel}:INVersion?")
+
+
+    def set_sync(self, channel: int, sync=False):
+        """
+         Function
+            Set the sync output of channel.
+            Note: Only one sync output interface in the device,
+            and can only open the sync output of one channel.
+         Example
+            gen.set_sync(1, True)
+            Set the sync output of channel 1 ON
+        """
+        self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
+
+
+    def get_sync(self, channel: int):
+        """
+         Function
+            Returns the sync output of specified channel, 0 in OFF, 1 in ON
+         Example
+            gen.set_sync(1, True)
+            gen.get_sync(1)
+            Returns 1, because ch1 is synced
+        """
+        return self.query(f":CHANnel{channel}:OUTPut:SYNC?")
+
+
+    def limit_enable(self, channel: int, enable=True):
+        pass
+
 
     def set_waveform(self, channel, waveform):
         self.write(f":CHANnel{channel}:BASE:WAVe {waveform.upper()}")
@@ -99,8 +151,13 @@ class UTG900E:
         self.set_mode(channel, mode)
         self.set_waveform(channel, waveform)
 
-        if "freq" in kwargs:
+        if "freq" in kwargs and "period" not in kwargs:
             self.set_frequency(channel, kwargs["freq"])
+        elif "freq" not in kwargs and "period" in kwargs:
+            self.set_frequency(channel, kwargs["period"])
+        elif "freq" in kwargs and "period" in kwargs:
+            raise
+
         if "amp" in kwargs:
             self.set_amplitude(channel, kwargs["amp"])
         if "offset" in kwargs:
@@ -136,6 +193,8 @@ class UTG900E:
 # --- Usage example ---
 
 if __name__ == "__main__":
+    ch1, ch2 = 1, 2
+
     # Set device address
     device_address = 'USB0::0x6656::0x0834::AWG1524090001::INSTR'
     gen = UTG900E(device_address)
@@ -149,6 +208,7 @@ if __name__ == "__main__":
         phase=-18.3,
         duty=55.5
     )
+    print("Inversion: ", gen.get_inversion(ch1))
     gen.set_output(1, True)
     input("Press Enter for signal disable...")
     gen.set_output(1, False)
