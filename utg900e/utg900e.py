@@ -38,6 +38,9 @@ class UTG900E:
     def identify(self):
         return self.query("*IDN?")
 
+    def reset(self):
+        self.write("*RST")
+
     # --- Low-level commands (SCPI wrappers) ---
 
     def set_output(self, channel, state=True):
