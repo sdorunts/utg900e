@@ -17,8 +17,6 @@ class UTG900E:
     def connect(self, device_addr):
         try:
             self.inst = self.rm.open_resource(device_addr)
-            self.inst.write_termination = '\n'
-            self.inst.read_termination = '\n'
             logger.info(f"Connected to {device_addr}")
         except Exception as e:
             logger.error(f"Connection error: {e}")
