@@ -132,4 +132,28 @@ class UTG900E:
     def configure_pulse(self, channel=1, **kwargs):
         self.configure_waveform(channel, waveform="PULSE", **kwargs)
 
-    
+# --- Usage example ---
+
+if __name__ == "__main__":
+    # Set device address
+    device_address = 'USB0::0x5345::0x1234::SN20220718::INSTR'
+
+    gen = UTG900E(device_address)
+
+    print("IDN:", gen.identify())
+
+    # Set square signal on CH1 channel
+    gen.configure_square(
+        channel=1,
+        freq=1000,
+        amplitude=3.3,
+        offset=0.0,
+        phase=45,
+        duty=30
+    )
+
+    gen.set_output(1, True)
+    input("Press Enter for signal disable...")
+    gen.set_output(1, False)
+    gen.close()
+ 
