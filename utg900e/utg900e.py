@@ -1,7 +1,7 @@
 import pyvisa
 import logging
 
-# Логгирование
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -12,22 +12,22 @@ class UTG900E:
         if device_addr:
             self.connect(device_addr)
         else:
-            logger.warning("Устройство не подключено: не указан адрес.")
+            logger.warning("Device has not been connected: address hasn't been priveded.")
 
     def connect(self, device_addr):
         try:
             self.inst = self.rm.open_resource(device_addr)
             self.inst.write_termination = '\n'
             self.inst.read_termination = '\n'
-            logger.info(f"Подключено к {device_addr}")
+            logger.info(f"Connected to {device_addr}")
         except Exception as e:
-            logger.error(f"Ошибка подключения: {e}")
+            logger.error(f"Connection error: {e}")
             raise
 
     def close(self):
         if self.inst:
             self.inst.close()
-            logger.info("Соединение закрыто.")
+            logger.info("Connection closed.")
 
     def write(self, command):
         logger.debug(f"→ {command}")
