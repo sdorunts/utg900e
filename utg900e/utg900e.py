@@ -136,7 +136,7 @@ class UTG900E:
 
 if __name__ == "__main__":
     # Set device address
-    device_address = 'USB0::0x5345::0x1234::SN20220718::INSTR'
+    device_address = 'USB0::0x6656::0x0834::AWG1524090001::INSTR'
 
     gen = UTG900E(device_address)
 
