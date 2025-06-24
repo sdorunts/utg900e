@@ -51,7 +51,10 @@ class UTG900E:
             gen.set_output(1) Set the channel 1 output ON
             gen.set_output(1, False) Set the channel 1 output OFF
         """
-        self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
+        if channel in (0, 1):
+            self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
+        else:
+            raise
 
 
     def get_output(self, channel: int) -> int:
@@ -62,7 +65,10 @@ class UTG900E:
             gen.set_output(1)
             gen.get_output(1) Returns 1, because channel 1 output is enabled
         """
-        return self.query(f":CHANnel{channel}:OUTPut?")
+        if channel in (0, 1):
+            return self.query(f":CHANnel{channel}:OUTPut?")
+        else:
+            raise
 
 
     def set_inversion(self, channel: int, inversion=False):
@@ -72,7 +78,10 @@ class UTG900E:
          Example
             gen.set_inversion(1, True) Set the reverse output of channel 1 ON
         """
-        self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
+        if channel in (0, 1):
+            self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
+        else:
+            raise
 
 
     def get_inversion(self, channel: int):
@@ -83,7 +92,10 @@ class UTG900E:
             gen.set_inversion(1, True)
             gen.get_inversion(1) Returns 1, because channel 1 is reversed
         """
-        return self.query(f":CHANnel{channel}:INVersion?")
+        if channel in (0, 1):
+            return self.query(f":CHANnel{channel}:INVersion?")
+        else:
+            raise
 
 
     def set_sync(self, channel: int, sync=False):
@@ -95,7 +107,10 @@ class UTG900E:
          Example
             gen.set_sync(1, True) Set the sync output of channel 1 ON
         """
-        self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
+        if channel in (0, 1):
+            self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
+        else:
+            raise
 
 
     def get_sync(self, channel: int):
@@ -106,7 +121,10 @@ class UTG900E:
             gen.set_sync(1, True)
             gen.get_sync(1) Returns 1, because channel 1 is synced
         """
-        return self.query(f":CHANnel{channel}:OUTPut:SYNC?")
+        if channel in (0, 1):
+            return self.query(f":CHANnel{channel}:OUTPut:SYNC?")
+        else:
+            raise
 
 
     def limit_enable(self, channel: int, enable=True):
@@ -115,6 +133,7 @@ class UTG900E:
 
     def set_waveform(self, channel, waveform):
         self.write(f":CHANnel{channel}:BASE:WAVe {waveform.upper()}")
+
 
     def set_mode(self, channel, mode):
         self.write(f":CHANnel{channel}:MODe {mode.upper()}")
