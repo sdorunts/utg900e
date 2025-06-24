@@ -228,7 +228,7 @@ class UTG900E:
         self.write(f":CHANnel{channel}:AMPLitude:UNIT {unit}")
 
 
-    def get_amplitude_unit(self, channel: int):
+    def get_amplitude_unit(self, channel: int) -> str:
         """
          Function
             Returns the unit of output amplitude in specified channel.
@@ -242,15 +242,41 @@ class UTG900E:
         pass
 
 
-    def set_waveform(self, channel, waveform):
+    def get_load(self, channel: int) -> int:
+        pass
+
+
+    def set_waveform(self, channel: int, waveform: str):
         self.write(f":CHANnel{channel}:BASE:WAVe {waveform.upper()}")
 
 
-    def set_mode(self, channel, mode):
-        self.write(f":CHANnel{channel}:MODe {mode.upper()}")
+    def get_waveform(self, channel: int) -> str:
+        pass
 
-    def set_frequency(self, channel, freq_hz):
+
+    def set_frequency(self, channel: int, freq_hz: float):
         self.write(f":CHANnel{channel}:BASE:FREQuency {freq_hz}")
+
+
+    def get_frequency(self, channel: int):
+        pass
+
+
+    def set_period(self, channel: int, period_s: float):
+        pass
+
+
+    def get_period(self, channel: int) -> float:
+        pass
+
+
+    def set_phase(self, channel, phase_deg):
+        self.write(f":CHANnel{channel}:BASE:PHAse {phase_deg}")
+
+
+    def get_phase(self, channel: int) -> float:
+        pass
+
 
     def set_amplitude(self, channel: int, amplitude_v: float):
         if channel not in self.channel_numbers:
@@ -263,27 +289,81 @@ class UTG900E:
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
-    def set_offset(self, channel, offset_v):
+
+    def get_amplitude(self, channel: int):
+        pass
+
+
+    def set_offset(self, channel: int, offset_v: float):
         self.write(f":CHANnel{channel}:BASE:OFFSet {offset_v}")
 
-    def set_phase(self, channel, phase_deg):
-        self.write(f":CHANnel{channel}:BASE:PHAse {phase_deg}")
 
-    def set_duty(self, channel, duty_percent):
+    def get_offset(self, channel: int) -> float:
+        pass
+
+
+    def set_high(self, channel: int, high_v: float):
+        pass
+
+
+    def get_high(self, channel: int) -> float:
+        pass
+
+
+    def set_low(self, channel: int, low_v: float):
+        pass
+
+
+    def get_low(self, channel: int) -> float:
+        pass
+
+
+    def set_duty(self, channel: int, duty_percent: float):
         if not (0 <= duty_percent <= 100):
             raise ValueError("Duty must be 0–100%")
         self.write(f":CHANnel{channel}:BASE:DUTY {duty_percent}")
 
-    def set_symmetry(self, channel, symmetry_percent):
+
+    def get_duty(self, channel: int) -> float:
+        pass
+
+
+    def set_symmetry(self, channel: int, symmetry_percent: float):
         if not (0 <= symmetry_percent <= 100):
             raise ValueError("Symmetry must be 0–100%")
         self.write(f":CHANnel{channel}:RAMP:SYMMetry {symmetry_percent}")
 
-    def set_rise_time(self, channel, rise_s):
+
+    def get_symmetry(self, channel: int) -> float:
+        pass
+
+
+    def set_rise_time(self, channel: int, rise_s: float):
         self.write(f":CHANnel{channel}:PULSe:RISe {rise_s}")
 
-    def set_fall_time(self, channel, fall_s):
+
+    def get_rise_time(self, channel: int) -> float:
+        pass
+
+
+    def set_fall_time(self, channel: int, fall_s: float):
         self.write(f":CHANnel{channel}:PULSe:FALL {fall_s}")
+
+
+    def get_fall_time(self, channel: int) -> float:
+        pass
+
+
+    def set_mode(self, channel: int, mode: str):
+        self.write(f":CHANnel{channel}:MODe {mode.upper()}")
+
+
+    def get_mode(self, channel: int) -> str:
+        pass
+
+
+
+
 
     # --- Universal signal setting methods ---
 
