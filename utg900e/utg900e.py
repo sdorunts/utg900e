@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 class UTG900E:
     channel_numbers = (0, 1)
+    available_amplitude_units = ("VPP", "VRMS")
 
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
@@ -145,7 +146,7 @@ class UTG900E:
     def is_limit_enable(self, channel: int) -> int:
         """
          Function
-            The query returns the amplitude limiting status of specified channel
+            Returns the amplitude limiting status of specified channel
          Example
             gen.limit_enable(1)
             gen.is_limit_enable(1) Returns 1, because channel 1 limit is enable
@@ -178,10 +179,67 @@ class UTG900E:
          Example
             get.get_lower_limit(1) Returns 2e+0
         """
-        if channel not in self.channel_numbers:
+        if channel in self.channel_numbers:
             return self.query(f":CHANnel{channel}:LIMit:LOWer?")
         else:
             raise
+
+
+    def set_upper_limit(self, channel: int, limit_v: float):
+        """
+         Function
+            Set the upper amplitude limit of specified channel.
+            <voltage> means voltage, and its unit is the specified unit of current channel.
+         Example
+            get.set_upper_limit(1, 2) Set the upper amplitude limit of channel 1 to 2V
+        """
+        if channel in self.channel_numbers:
+            self.write(f":CHANnel{channel}:LIMit:UPPer {limit_v}")
+        else:
+            raise
+
+
+    def get_upper_limit(self, channel: int) -> float:
+        """
+         Function
+            Returns the upper amplitude limit of specified channel, using scientific notation to return.
+         Example
+            get.get_upper_limit(1) Returns 2e+0
+        """
+        if channel in self.channel_numbers:
+            return self.query(f":CHANnel{channel}:LIMit:UPPer?")
+        else:
+            raise
+
+
+    def set_amplitude_unit(self, channel: int, unit="VPP"):
+        """
+         Function
+            Set the unit of output amplitude in specified channel
+            Available units are VPP and VRMS
+         Example
+            gen.set_amplitude_unit(1, "Vrms") Set the unit of output amplitude in channel 1 to VRMS
+        """
+        if channel not in self.channel_numbers:
+            raise
+        unit = unit.upper()
+        if unit not in self.available_amplitude_units:
+            raise
+        self.write(f":CHANnel{channel}:AMPLitude:UNIT {unit}")
+
+
+    def get_amplitude_unit(self, channel: int):
+        """
+         Function
+            Returns the unit of output amplitude in specified channel.
+         Example
+            gen.set_amplitude_unit(1, "Vrms") Set the unit of output amplitude in channel 1 to VRMS
+        """
+        pass
+
+
+    def set_load(self, channel: int, resistance_r=50):
+        pass
 
 
     def set_waveform(self, channel, waveform):
@@ -194,7 +252,15 @@ class UTG900E:
     def set_frequency(self, channel, freq_hz):
         self.write(f":CHANnel{channel}:BASE:FREQuency {freq_hz}")
 
-    def set_amplitude(self, channel, amplitude_v: float, amplitude_units: str):
+    def set_amplitude(self, channel: int, amplitude_v: float):
+        if channel not in self.channel_numbers:
+            raise
+
+        if self.is_limit_enable(channel):
+            lower_limit = float(self.get_lower_limit(channel))
+            upper_limit = float(self.get_upper_limit(channel))
+            # upper_limit = self.get_upper_limit(channel)
+
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
     def set_offset(self, channel, offset_v):
@@ -221,7 +287,7 @@ class UTG900E:
 
     # --- Universal signal setting methods ---
 
-    def configure_waveform(self, channel=1, waveform="SINE", mode="CONTinue", **kwargs):
+    def configure_waveform(self, channel: int, waveform="SINE", mode="CONTinue", **kwargs):
         """
         Universal signal configurator
 
@@ -245,6 +311,8 @@ class UTG900E:
         elif "freq" in kwargs and "period" in kwargs:
             raise
 
+        if "amp_unit" in kwargs:
+            self.set_amplitude_unit(channel, kwargs["amp_unit"])
         if "amp" in kwargs:
             self.set_amplitude(channel, kwargs["amp"])
         if "offset" in kwargs:
@@ -265,16 +333,16 @@ class UTG900E:
 
     # --- Presett methods ---
 
-    def configure_sine(self, channel=1, **kwargs):
+    def configure_sine(self, channel: int, **kwargs):
         self.configure_waveform(channel, waveform="SINE", **kwargs)
 
-    def configure_square(self, channel=1, **kwargs):
+    def configure_square(self, channel: int, **kwargs):
         self.configure_waveform(channel, waveform="SQUARE", **kwargs)
 
-    def configure_ramp(self, channel=1, **kwargs):
+    def configure_ramp(self, channel: int, **kwargs):
         self.configure_waveform(channel, waveform="RAMP", **kwargs)
 
-    def configure_pulse(self, channel=1, **kwargs):
+    def configure_pulse(self, channel: int, **kwargs):
         self.configure_waveform(channel, waveform="PULSE", **kwargs)
 
 # --- Usage example ---
