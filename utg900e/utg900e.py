@@ -44,15 +44,33 @@ class UTG900E:
     # --- Low-level commands (SCPI wrappers) ---
 
     def set_output(self, channel: int, state=True):
+        """
+         Function
+            Set the specified channel output ON/OFF
+         Example
+            gen.set_output(1) Set the channel 1 output ON
+            gen.set_output(1, False) Set the channel 1 output OFF
+        """
         self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
+
+
+    def get_output(self, channel: int) -> int:
+        """
+         Function
+            Returns the specified channel output status, 0 in OFF, 1 in ON
+         Example
+            gen.set_output(1)
+            gen.get_output(1) Returns 1, because channel 1 output is enabled
+        """
+        return self.query(f":CHANnel{channel}:OUTPut?")
+
 
     def set_inversion(self, channel: int, inversion=False):
         """
          Function
             Set the specified channel reverse ON (True) / OFF (False).
          Example
-            gen.set_inversion(1, True)
-            Set the reverse output of channel 1 ON
+            gen.set_inversion(1, True) Set the reverse output of channel 1 ON
         """
         self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
 
@@ -63,8 +81,7 @@ class UTG900E:
             Returns the specified channel reverse, 0 in OFF, 1 in ON.
          Example
             gen.set_inversion(1, True)
-            gen.get_inversion(1)
-            Returns 1, because channel 1 is reversed
+            gen.get_inversion(1) Returns 1, because channel 1 is reversed
         """
         return self.query(f":CHANnel{channel}:INVersion?")
 
@@ -76,8 +93,7 @@ class UTG900E:
             Note: Only one sync output interface in the device,
             and can only open the sync output of one channel.
          Example
-            gen.set_sync(1, True)
-            Set the sync output of channel 1 ON
+            gen.set_sync(1, True) Set the sync output of channel 1 ON
         """
         self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
 
@@ -88,8 +104,7 @@ class UTG900E:
             Returns the sync output of specified channel, 0 in OFF, 1 in ON
          Example
             gen.set_sync(1, True)
-            gen.get_sync(1)
-            Returns 1, because ch1 is synced
+            gen.get_sync(1) Returns 1, because channel 1 is synced
         """
         return self.query(f":CHANnel{channel}:OUTPut:SYNC?")
 
