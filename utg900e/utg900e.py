@@ -6,6 +6,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class UTG900E:
+    channel_numbers = (0, 1)
+
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
         self.inst = None
@@ -51,7 +53,7 @@ class UTG900E:
             gen.set_output(1) Set the channel 1 output ON
             gen.set_output(1, False) Set the channel 1 output OFF
         """
-        if channel in (0, 1):
+        if channel in self.channel_numbers:
             self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
         else:
             raise
@@ -65,7 +67,7 @@ class UTG900E:
             gen.set_output(1)
             gen.get_output(1) Returns 1, because channel 1 output is enabled
         """
-        if channel in (0, 1):
+        if channel in self.channel_numbers:
             return self.query(f":CHANnel{channel}:OUTPut?")
         else:
             raise
@@ -78,7 +80,7 @@ class UTG900E:
          Example
             gen.set_inversion(1, True) Set the reverse output of channel 1 ON
         """
-        if channel in (0, 1):
+        if channel in self.channel_numbers:
             self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
         else:
             raise
@@ -92,7 +94,7 @@ class UTG900E:
             gen.set_inversion(1, True)
             gen.get_inversion(1) Returns 1, because channel 1 is reversed
         """
-        if channel in (0, 1):
+        if channel in self.channel_numbers:
             return self.query(f":CHANnel{channel}:INVersion?")
         else:
             raise
@@ -107,7 +109,7 @@ class UTG900E:
          Example
             gen.set_sync(1, True) Set the sync output of channel 1 ON
         """
-        if channel in (0, 1):
+        if channel in self.channel_numbers:
             self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
         else:
             raise
@@ -121,14 +123,65 @@ class UTG900E:
             gen.set_sync(1, True)
             gen.get_sync(1) Returns 1, because channel 1 is synced
         """
-        if channel in (0, 1):
+        if channel in self.channel_numbers:
             return self.query(f":CHANnel{channel}:OUTPut:SYNC?")
         else:
             raise
 
 
     def limit_enable(self, channel: int, enable=True):
-        pass
+        """
+         Function
+            Set the amplitude limiting ON/OFF of specified channel
+         Example
+            gen.limit_enable(1) Set the amplitude limiting of channel 1 ON
+        """
+        if channel in self.channel_numbers:
+            self.write(f":CHANnel{channel}:LIMit:ENABle {"ON" if enable else "OFF"}")
+        else:
+            raise
+
+
+    def is_limit_enable(self, channel: int) -> int:
+        """
+         Function
+            The query returns the amplitude limiting status of specified channel
+         Example
+            gen.limit_enable(1)
+            gen.is_limit_enable(1) Returns 1, because channel 1 limit is enable
+        """
+        if channel in self.channel_numbers:
+            return self.query(f":CHANnel{channel}:LIMit:ENABle?")
+        else:
+            raise
+
+
+    def set_lower_limit(self, channel: int, limit_v: float):
+        """
+         Function
+            Set the lower amplitude limit of specified channel.
+            <voltage> means the voltage, and its unit is the
+            specified unit of current channel
+         Example
+            get.set_lower_limit(1, 2) Set the lower amplitude limit of channel 1 to 2V
+        """
+        if channel in self.channel_numbers:
+            self.write(f":CHANnel{channel}:LIMit:LOWer {limit_v}")
+        else:
+            raise
+
+
+    def get_lower_limit(self, channel: int) -> float:
+        """
+         Function
+            Returns the lower amplitude limit of specified channel, using scientific notation to return.
+         Example
+            get.get_lower_limit(1) Returns 2e+0
+        """
+        if channel not in self.channel_numbers:
+            return self.query(f":CHANnel{channel}:LIMit:LOWer?")
+        else:
+            raise
 
 
     def set_waveform(self, channel, waveform):
@@ -141,7 +194,7 @@ class UTG900E:
     def set_frequency(self, channel, freq_hz):
         self.write(f":CHANnel{channel}:BASE:FREQuency {freq_hz}")
 
-    def set_amplitude(self, channel, amplitude_v):
+    def set_amplitude(self, channel, amplitude_v: float, amplitude_units: str):
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
     def set_offset(self, channel, offset_v):
