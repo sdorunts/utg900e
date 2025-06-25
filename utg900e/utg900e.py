@@ -251,10 +251,33 @@ class UTG900E:
 
 
     def set_period(self, channel: int, period_s: float):
-        pass
+        """
+         Function
+            Set the output period of specified channel
+         Example
+            gen.set_period(1, 0.002) Set the output period of channel 1 to 2ms
+
+        :param channel: Channel No. Value 1, 2
+        :param period_s: Period, in “s” unit. If sine wave: max. ~ 1e3s
+        :return: None
+        """
+        if channel not in self.channel_numbers:
+            raise
+        self.write(f":CHANnel{channel}:BASE:PERiod {period_s}")
 
 
     def get_period(self, channel: int) -> float:
+        """
+         Function
+            Returns the period of specified channel.
+         Example
+            gen.set_period(1, 0.002)
+
+            gen.get_period(1) Returns 2e-3
+
+        :param channel: Channel No. Value 1, 2
+        :return: Period of specified channel, using scientific notation to return.
+        """
         pass
 
 
