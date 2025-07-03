@@ -61,6 +61,8 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if type(state) is not bool:
+            raise TypeError(f"{bool} was expected as state type, instead {type(state)} has been provided")
         self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
 
 
@@ -92,6 +94,8 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if type(inversion) is not bool:
+            raise TypeError(f"{bool} was expected as inversion type, instead {type(inversion)} has been provided")
         self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
 
 
@@ -123,6 +127,8 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if type(sync) is not bool:
+            raise TypeError(f"{bool} was expected as sync type, instead {type(sync)} has been provided")
         self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
 
 
@@ -154,6 +160,8 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if type(enable) is not bool:
+            raise TypeError(f"{bool} was expected as enable type, instead {type(enable)} has been provided")
         self.write(f":CHANnel{channel}:LIMit:ENABle {"ON" if enable else "OFF"}")
 
 
@@ -750,7 +758,7 @@ class UTG900E:
 
         if "amp_unit" in kwargs or "amp" in kwargs or "offset" in kwargs:
             if "high" in kwargs or "low" in kwargs:
-                raise ValueError("")
+                raise ValueError("Parameters 'high' and 'low' shouldn't be used together with 'amp_unit', 'amp' and 'offset' parameters")
             if "amp_unit" in kwargs:
                 self.set_amplitude_unit(channel, kwargs["amp_unit"])
             if "amp" in kwargs:
