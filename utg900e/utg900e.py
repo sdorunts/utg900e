@@ -738,16 +738,15 @@ class UTG900E:
         - rise_time (s, for PULSE only)
         - fall_time (s, for PULSE only)Low-level commands
         """
-        # ptm = {
-        #     "freq": self.set_frequency(channel, kwargs["freq"]),
-        #     "period": self.set_period(channel, kwargs["period"]),
-        #     "amp_units": self.set_amplitude_unit(channel, kwargs["amp_unit"]),
-        #     "amp": self.set_amplitude(channel, kwargs["amp"]),
-        #     "offset": self.set_offset(channel, kwargs["offset"]),
-        # }
+        min_ac_div2_v= 0.001
+        wave = waveform.upper()
 
         self.set_mode(channel, mode)
-        self.set_wave(channel, waveform)
+        self.set_wave(channel, wave)
+
+        if "dc" in kwargs:
+            self.set_low(channel, kwargs["dc"] - min_ac_div2_v)
+            self.set_high(channel, kwargs["dc"] + min_ac_div2_v)
 
         if "freq" in kwargs and "period" in kwargs:
             raise ValueError("")
@@ -757,7 +756,7 @@ class UTG900E:
             self.set_period(channel, kwargs["period"])
 
         if "amp_unit" in kwargs or "amp" in kwargs or "offset" in kwargs:
-            if "high" in kwargs or "low" in kwargs:
+            if ("high" in kwargs or "low" in kwargs) and (wave != "DC"):
                 raise ValueError("Parameters 'high' and 'low' shouldn't be used together with 'amp_unit', 'amp' and 'offset' parameters")
             if "amp_unit" in kwargs:
                 self.set_amplitude_unit(channel, kwargs["amp_unit"])
@@ -765,16 +764,14 @@ class UTG900E:
                 self.set_amplitude(channel, kwargs["amp"])
             if "offset" in kwargs:
                 self.set_offset(channel, kwargs["offset"])
-        elif "high" in kwargs or "low" in kwargs:
+        if "high" in kwargs or "low" in kwargs:
             if "high" in kwargs:
                 self.set_high(channel, kwargs["high"])
             if "low" in kwargs:
                 self.set_low(channel, kwargs["low"])
-
         if "phase" in kwargs:
             self.set_phase(channel, kwargs["phase"])
 
-        wave = waveform.upper()
         if wave in ("SQU", "SQUARE", "PULSE") and "duty" in kwargs:
             self.set_duty(channel, kwargs["duty"])
         if wave == "RAMP" and "symmetry" in kwargs:
@@ -788,16 +785,89 @@ class UTG900E:
     # --- Preset methods ---
 
     def configure_sine(self, channel: int, **kwargs):
+        """
+        Method for square waveform configuration.
+        Available parameters in **kwargs:
+        \t
+        - freq (Hz),
+        - amp_unit ('Vpp' or 'Vrms') and amp (V) and offset (V) or
+        - high (V) and low (V),
+        - phase (deg).
+
+        :param channel: Channel No. Value 1, 2.
+        :param kwargs: Dict with parameters.
+        :return: None
+        """
         self.configure_waveform(channel, waveform="SINE", **kwargs)
 
-    def configure_square(self, channel: int, **kwargs):
+    def configure_square(self, channel: int, **kwargs) -> None:
+        """
+        Method for square waveform configuration.
+        Available parameters in **kwargs:
+        \t
+        - freq (Hz),
+        - amp_unit ('Vpp' or 'Vrms') and amp (V) and offset (V) or
+        - high (V) and low (V),
+        - phase (deg),
+        - duty (%).
+
+        :param channel: Channel No. Value 1, 2.
+        :param kwargs: Dict with parameters.
+        :return: None
+        """
         self.configure_waveform(channel, waveform="SQUARE", **kwargs)
 
     def configure_ramp(self, channel: int, **kwargs):
+        """
+        Method for ramp waveform configuration.
+        \n
+        Available parameters in **kwargs:
+        \t
+        - freq (Hz),
+        - amp_unit ('Vpp' or 'Vrms') and amp (V) and offset (V) or
+        - high (V) and low (V),
+        - phase (deg),
+        - symmetry (%).
+
+        :param channel: Channel No. Value 1, 2.
+        :param kwargs: Dict with parameters.
+        :return: None
+        """
         self.configure_waveform(channel, waveform="RAMP", **kwargs)
 
     def configure_pulse(self, channel: int, **kwargs):
+        """
+        Method for pulse waveform configuration.
+        \n
+        Available parameters in **kwargs:
+        \t
+        - freq (Hz),
+        - amp_unit ('Vpp' or 'Vrms') and amp (V) and offset (V) or
+        - high (V) and low (V),
+        - phase (deg),
+        - duty (%),
+        - rise_time (s),
+        - fall time (s).
+
+        :param channel: Channel No. Value 1, 2.
+        :param kwargs: Dict with parameters.
+        :return: None
+        """
         self.configure_waveform(channel, waveform="PULSE", **kwargs)
+
+    def configure_dc(self, channel: int, **kwargs):
+        """
+        Method for dc waveform configuration.
+        \n
+        Available parameters in **kwargs:
+        \t
+        - dc (V).
+
+        :param channel: Channel No. Value 1, 2.
+        :param kwargs: Dict with parameters.
+        :return: None
+        """
+        self.configure_waveform(channel, waveform="DC", **kwargs)
 
 # --- Usage example ---
 
