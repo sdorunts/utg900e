@@ -81,7 +81,7 @@ class UTG900E:
         return self.query(f":CHANnel{channel}:OUTPut?")
 
 
-    def set_inversion(self, channel: int, inversion=False) -> None:
+    def set_inversion(self, channel: int, inversion=True) -> None:
         """
          Function
             Set the specified channel reverse
@@ -188,11 +188,19 @@ class UTG900E:
             get.set_lower_limit(1, 2) - Set the lower amplitude limit of channel 1 to 2V
 
         :param channel: Channel No. Value 1, 2
-        :param limit_v: Voltage in Volts as a float number. Its unit is the specified unit of current channel.
+        :param limit_v: Voltage in Volts as a float number. Range -10V~9.998V. Its unit is the specified unit of current channel.
         :return: None
         """
+        load = self.get_load(channel)
+        upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
+        lower_limit = upper_limit
+        logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if limit_v < lower_limit:
+            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be lower than {lower_limit}V. Lower limit set to {lower_limit}V.")
+        elif limit_v >= upper_limit:
+            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be greater or equal to {upper_limit}V. Lower limit set to {upper_limit-0.002}V.")
         self.write(f":CHANnel{channel}:LIMit:LOWer {limit_v}")
 
 
@@ -219,11 +227,21 @@ class UTG900E:
             get.set_upper_limit(1, 2) - Set the upper amplitude limit of channel 1 to 2V
 
         :param channel: Channel No. Value 1, 2
-        :param limit_v: Voltage in Volts as a float number. Its unit is the specified unit of current channel.
+        :param limit_v: Voltage in Volts as a float number. Range -9.998V~10V. Its unit is the specified unit of current channel.
         :return: None
         """
+        load = self.get_load(channel)
+        upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
+        lower_limit = -1 * upper_limit
+        logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
+        # lower_limit = round(self.get_lower_limit(channel), 3)
+        # upper_limit = round(self.get_upper_limit(channel), 3)
         if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if limit_v <= lower_limit:
+            logger.info(f"Try to set {limit_v}V as upper limit, but it can not be lower or equal to {lower_limit}V. Upper limit set to {lower_limit+0.002}V.")
+        elif limit_v > upper_limit:
+            logger.info(f"Try to set {limit_v}V as upper limit, but it can not be greater than {upper_limit}V. Upper limit set to {upper_limit}V.")
         self.write(f":CHANnel{channel}:LIMit:UPPer {limit_v}")
 
 
@@ -238,8 +256,8 @@ class UTG900E:
         :return: The upper limit voltage in Volts as a float number.
         """
         if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:LIMit:UPPer?")
+            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        return float(self.query(f":CHANnel{channel}:LIMit:UPPer?"))
 
 
     def set_amplitude_unit(self, channel: int, unit="VPP") -> None:
@@ -288,11 +306,18 @@ class UTG900E:
         :return: None
         """
         if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if resistance_r < 1:
+            logger.info(f"Try to set {resistance_r} as current load, but it can not be lower than 1Ω. Resistance set to 1Ω.")
+        elif resistance_r > 10000:
+            logger.info(f"Try to set {resistance_r} as current load, but it can not be grater than 10000Ω. Resistance set to 10000Ω.")
         self.write(f":CHANnel{channel}:LOAD {resistance_r}")
+        lower_limit = round(self.get_lower_limit(channel), 3)
+        upper_limit = round(self.get_upper_limit(channel), 3)
+        logger.info(f"Load changed to {resistance_r}. Lower limit and upper limit equals to {lower_limit}V and {upper_limit}V respectively.")
 
 
-    def get_load(self, channel: int) -> int:
+    def get_load(self, channel: int) -> float:
         """
          Function
             Get the output load of specified channel.
@@ -303,8 +328,8 @@ class UTG900E:
         :return: The load resistance of specified channel as a float number.
         """
         if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:LOAD?")
+            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        return float(self.query(f":CHANnel{channel}:LOAD?"))
 
 
     def set_wave(self, channel: int, wave: str) -> None:
@@ -319,7 +344,7 @@ class UTG900E:
         :return: None
         """
         if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
         self.write(f":CHANnel{channel}:BASE:WAVe {wave.upper()}")
 
 
