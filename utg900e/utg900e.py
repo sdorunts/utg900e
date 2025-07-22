@@ -9,10 +9,12 @@ class UTG900E:
     channel_numbers = (1, 2)
     available_amplitude_units = ("VPP", "VRMS")
     available_modes = ("CONTINUE", "AM", "PM", "FM", "FSK", "Line", "Log")
+    available_waves = ("SINe", "SQUare", "PULSe", "RAMP", "ARB", "NOISe", "DC")
 
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
         self.inst = None
+        self._limit_calc = lambda x: 10 * x / (50 + x)
         if device_addr:
             self.connect(device_addr)
         else:
@@ -177,7 +179,7 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:LIMit:ENABle?")
+        return int(self.query(f":CHANnel{channel}:LIMit:ENABle?"))
 
 
     def set_lower_limit(self, channel: int, limit_v: float) -> None:
@@ -193,14 +195,16 @@ class UTG900E:
         """
         load = self.get_load(channel)
         upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
-        lower_limit = upper_limit
+        lower_limit = -1 * upper_limit
         logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
         if limit_v < lower_limit:
             logger.info(f"Try to set {limit_v}V as lower limit, but it can not be lower than {lower_limit}V. Lower limit set to {lower_limit}V.")
+            limit_v = lower_limit
         elif limit_v >= upper_limit:
-            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be greater or equal to {upper_limit}V. Lower limit set to {upper_limit-0.002}V.")
+            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be greater or equal to {upper_limit}V. Lower limit set to {upper_limit}V.")
+            limit_v = upper_limit
         self.write(f":CHANnel{channel}:LIMit:LOWer {limit_v}")
 
 
@@ -216,7 +220,7 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return float(self.query(f":CHANnel{channel}:LIMit:LOWer?"))
+        return round(float(self.query(f":CHANnel{channel}:LIMit:LOWer?")), 3)
 
 
     def set_upper_limit(self, channel: int, limit_v: float) -> None:
@@ -239,9 +243,11 @@ class UTG900E:
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
         if limit_v <= lower_limit:
-            logger.info(f"Try to set {limit_v}V as upper limit, but it can not be lower or equal to {lower_limit}V. Upper limit set to {lower_limit+0.002}V.")
+            logger.info(f"Try to set {limit_v}V as upper limit, but it can not be lower or equal to {lower_limit}V. Upper limit set to {lower_limit}V.")
+            limit_v = lower_limit
         elif limit_v > upper_limit:
             logger.info(f"Try to set {limit_v}V as upper limit, but it can not be greater than {upper_limit}V. Upper limit set to {upper_limit}V.")
+            limit_v = upper_limit
         self.write(f":CHANnel{channel}:LIMit:UPPer {limit_v}")
 
 
@@ -345,6 +351,8 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if wave not in self.available_waves:
+            raise ValueError(f"Wave should be in available waves: {self.available_waves}.")
         self.write(f":CHANnel{channel}:BASE:WAVe {wave.upper()}")
 
 
@@ -391,7 +399,7 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:BASE:FREQuency?")
+        return float(self.query(f":CHANnel{channel}:BASE:FREQuency?"))
 
 
     def set_period(self, channel: int, period_s: float):
@@ -405,8 +413,16 @@ class UTG900E:
         :param period_s: Period, in “s” unit. If sine wave: max. ~ 1e3s
         :return: None
         """
+        higher_value = 1e6
+        lower_value = 1.7e-08
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if period_s > higher_value:
+            logger.info(f"Try to set {period_s}V as a period, but it can not grater than {higher_value}V. Period set to {higher_value}V.")
+            period_s = higher_value
+        elif period_s < lower_value:
+            logger.info(f"Try to set {period_s}V as a period, but it can not lower than {lower_value}V. Period set to {lower_value}V.")
+            period_s = lower_value
         self.write(f":CHANnel{channel}:BASE:PERiod {period_s}")
 
 
@@ -422,7 +438,7 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:BASE:PERiod?")
+        return float(self.query(f":CHANnel{channel}:BASE:PERiod?"))
 
 
     def set_phase(self, channel: int, phase_deg: float) -> None:
@@ -436,8 +452,16 @@ class UTG900E:
         :param phase_deg: The phase, in “°” unit, range of -360~360.
         :return: None
         """
+        max_phase_deg = 360
+        min_phase_deg = -360
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if phase_deg > max_phase_deg:
+            logger.info(f"Try to set {phase_deg}V as a phase, but it can not grater than {max_phase_deg}V. Phase set to {max_phase_deg}V.")
+            phase_deg = max_phase_deg
+        if phase_deg < min_phase_deg:
+            logger.info(f"Try to set {phase_deg}V as a phase, but it can not lower than {min_phase_deg}V. Phase set to {min_phase_deg}V.")
+            phase_deg = min_phase_deg
         self.write(f":CHANnel{channel}:BASE:PHAse {phase_deg}")
 
 
@@ -453,7 +477,7 @@ class UTG900E:
         """
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:BASE:PHAse?")
+        return round(float(self.query(f":CHANnel{channel}:BASE:PHAse?")), 2)
 
 
     def set_amplitude(self, channel: int, amplitude_v: float) -> None:
@@ -471,9 +495,24 @@ class UTG900E:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
 
         if self.is_limit_enable(channel):
-            lower_limit = float(self.get_lower_limit(channel))
-            upper_limit = float(self.get_upper_limit(channel))
-            # upper_limit = self.get_upper_limit(channel)
+            lower_limit = self.get_lower_limit(channel)
+            upper_limit = self.get_upper_limit(channel)
+            if amplitude_v > upper_limit:
+                logger.info(f"Amplitude can not be greater than upper limit ({upper_limit}V). Amplitude set to {upper_limit}V.")
+                amplitude_v = upper_limit
+            elif amplitude_v < lower_limit:
+                logger.info(f"Amplitude can not be lower than lower limit ({lower_limit}V). Amplitude set to {lower_limit}V.")
+                amplitude_v = lower_limit
+        else:
+            load = self.get_load(channel)
+            upper_limit = self._limit_calc(load)
+            lower_limit = -1 * upper_limit
+            if amplitude_v > upper_limit:
+                logger.info(f"Amplitude can not be greater than upper limit ({upper_limit}V). Amplitude set to {upper_limit}V.")
+                amplitude_v = upper_limit
+            elif amplitude_v < lower_limit:
+                logger.info(f"Amplitude can not be lower than lower limit ({lower_limit}V). Amplitude set to {lower_limit}V.")
+                amplitude_v = lower_limit
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
