@@ -20,8 +20,8 @@ def test_connection(mock_instrument):
 
 def test_set_output(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
+    dev = UTG900E()
+    dev.inst = mock_inst
 
     value_error_tests   = ((-1, False), (3, False))
     type_error_tests    = ((1, 0), (1, 1), (1, "True"))
@@ -30,29 +30,25 @@ def test_set_output(mock_instrument):
     for value_error_test in value_error_tests:
         channel, state = value_error_test
         with pytest.raises(ValueError):
-            gen.set_output(channel, state)
+            dev.set_output(channel, state)
 
     for type_error_test in type_error_tests:
         channel, state = type_error_test
         with pytest.raises(TypeError):
-            gen.set_output(channel, state)
+            dev.set_output(channel, state)
 
     for assert_calls_test in assert_calls_tests:
         channel, state = assert_calls_test
-        gen.set_output(channel, state)
+        dev.set_output(channel, state)
         mock_inst.write.assert_called_with(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
 
 
 def test_get_output(mock_instrument):
     _, mock_inst = mock_instrument
-<<<<<<< Updated upstream
-    gen = UTG900E()
-    gen.inst = mock_inst
-=======
     dev = UTG900E()
     dev.inst = mock_inst
-<<<<<<< Updated upstream
-=======
+    dev = UTG900E()
+    dev.inst = mock_inst
     dev.set_frequency(1, 1234.5)
     mock_inst.write.assert_called_with(":CHANnel1:BASE:FREQuency 1234.5")
 
@@ -60,10 +56,8 @@ def test_set_waveform(mock_instrument):
     _, mock_inst = mock_instrument
     dev = UTG900E()
     dev.inst = mock_inst
->>>>>>> Stashed changes
     dev.set_wave(2, "SINE")
     mock_inst.write.assert_called_with(":CHANnel2:BASE:WAVe SINE")
->>>>>>> Stashed changes
 
     value_error_tests   = (-1, 3, 0)
     assert_calls_tests  = (1, 2)
@@ -71,101 +65,101 @@ def test_set_waveform(mock_instrument):
     for value_error_test in value_error_tests:
         channel = value_error_test
         with pytest.raises(ValueError):
-            gen.get_output(channel)
+            dev.get_output(channel)
 
     for assert_calls_test in assert_calls_tests:
         channel = assert_calls_test
-        gen.get_output(channel)
+        dev.get_output(channel)
         mock_inst.query.assert_called_with(f":CHANnel{channel}:OUTPut?")
 
 
 def test_set_inversion(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.set_inversion(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.set_inversion(1)
     mock_inst.write.assert_called_with(":CHANnel1:INVersion OFF")
 
 
 def test_get_inversion(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.get_inversion(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.get_inversion(1)
     mock_inst.query.assert_called_with(":CHANnel1:INVersion?")
 
 
 def test_set_sync(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.set_sync(1, True)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.set_sync(1, True)
     mock_inst.write.assert_called_with(":CHANnel1:OUTPut:SYNC ON")
 
 def test_get_sync(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.get_sync(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.get_sync(1)
     mock_inst.query.assert_called_with(":CHANnel1:OUTPut:SYNC?")
 
 def test_limit_enable(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.limit_enable(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.limit_enable(1)
     mock_inst.write.assert_called_with(":CHANnel1:LIMit:ENABle ON")
 
 def test_is_limit_enable(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.is_limit_enable(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.is_limit_enable(1)
     mock_inst.query.assert_called_with(":CHANnel1:LIMit:ENABle?")
 
 def test_set_lower_limit(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.set_lower_limit(1, -0.01)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.set_lower_limit(1, -0.01)
     mock_inst.write.assert_called_with(":CHANnel1:LIMit:LOWer -0.01")
 
 def test_get_lower_limit(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.get_lower_limit(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.get_lower_limit(1)
     mock_inst.query.assert_called_with(":CHANnel1:LIMit:LOWer?")
 
 def test_set_upper_limit(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.set_upper_limit(1, +0.12)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.set_upper_limit(1, +0.12)
     mock_inst.write.assert_called_with(":CHANnel1:LIMit:UPPer 0.12")
 
 def test_get_upper_limit(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.get_upper_limit(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.get_upper_limit(1)
     mock_inst.query.assert_called_with(":CHANnel1:LIMit:UPPer?")
 
 def test_set_amplitude_unit(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
+    dev = UTG900E()
+    dev.inst = mock_inst
     tests = ((1, "VRMS"), (1, "VPP"), (2, "VRMS"), (2, "VPP"))
     for test in tests:
         channel, unit = test
-        gen.set_amplitude_unit(channel, unit)
+        dev.set_amplitude_unit(channel, unit)
         mock_inst.write.assert_called_with(f":CHANnel{channel}:AMPLitude:UNIT {unit}")
 
 def test_get_amplitude_unit(mock_instrument):
     _, mock_inst = mock_instrument
-    gen = UTG900E()
-    gen.inst = mock_inst
-    gen.get_amplitude_unit(1)
+    dev = UTG900E()
+    dev.inst = mock_inst
+    dev.get_amplitude_unit(1)
     mock_inst.query.assert_called_with(":CHANnel1:AMPLitude:UNIT?")
 
 # def test_set_frequency(mock_instrument):
