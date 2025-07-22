@@ -943,16 +943,24 @@ if __name__ == "__main__":
     gen = UTG900E(device_address)
     gen.reset()
     print("IDN:", gen.identify())
-    gen.configure_square(
-        channel=1,
-        freq=1000.001000,
-        amp=2,
-        offset=0.45,
-        phase=-18.3,
-        duty=55.5
+    gen.configure_pulse(
+        channel=2,
+        freq=2000,
+        # period=10.01,
+        # amp=5,
+        # amp_unit="Vrms",
+        # offset=0,
+        high=10,
+        low=-1,
+        phase=-28.3,
+        duty=50.5,
+        rise_time=0.000000150,
+        fall_time=0.000000150,
     )
     print("Inversion: ", gen.get_inversion(ch1))
-    gen.set_output(1, True)
+    # print("Inversion: ", gen.get_inversion(3))
+    print("Output: ", gen.get_output(ch1))
+    gen.set_output(2, True)
     input("Press Enter for signal disable...")
-    gen.set_output(1, False)
+    gen.set_output(2, False)
     gen.close()
