@@ -14,7 +14,7 @@ class UTG900E:
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
         self.inst = None
-        self._limit_calc = lambda x: 10 * x / (50 + x)
+        self._limit_calc = lambda x: 10 if x == 10000 else round(10 * x / (50 + x), 3)
         if device_addr:
             self.connect(device_addr)
         else:
@@ -235,7 +235,8 @@ class UTG900E:
         :return: None
         """
         load = self.get_load(channel)
-        upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
+        upper_limit = self._limit_calc(load)
+        # upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
         lower_limit = -1 * upper_limit
         logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         # lower_limit = round(self.get_lower_limit(channel), 3)
@@ -311,11 +312,13 @@ class UTG900E:
         :param resistance_r: Load resistance, in "Ω". The resistance value should be within the range of 1~10000, and the 10000 is for high resistance.
         :return: None
         """
+        lower_resistance = 1
+        higher_resistance = 1e4
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
-        if resistance_r < 1:
+        if resistance_r < lower_resistance:
             logger.info(f"Try to set {resistance_r} as current load, but it can not be lower than 1Ω. Resistance set to 1Ω.")
-        elif resistance_r > 10000:
+        elif resistance_r > higher_resistance:
             logger.info(f"Try to set {resistance_r} as current load, but it can not be grater than 10000Ω. Resistance set to 10000Ω.")
         self.write(f":CHANnel{channel}:LOAD {resistance_r}")
         lower_limit = round(self.get_lower_limit(channel), 3)
@@ -494,25 +497,31 @@ class UTG900E:
         if channel not in self.channel_numbers:
             raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
 
+        amp_unit = self.get_amplitude_unit(channel)
+        wave = self.get_wave(channel)
+
         if self.is_limit_enable(channel):
-            lower_limit = self.get_lower_limit(channel)
             upper_limit = self.get_upper_limit(channel)
-            if amplitude_v > upper_limit:
-                logger.info(f"Amplitude can not be greater than upper limit ({upper_limit}V). Amplitude set to {upper_limit}V.")
-                amplitude_v = upper_limit
-            elif amplitude_v < lower_limit:
-                logger.info(f"Amplitude can not be lower than lower limit ({lower_limit}V). Amplitude set to {lower_limit}V.")
-                amplitude_v = lower_limit
+            lower_limit = self.get_lower_limit(channel)
         else:
             load = self.get_load(channel)
             upper_limit = self._limit_calc(load)
             lower_limit = -1 * upper_limit
-            if amplitude_v > upper_limit:
-                logger.info(f"Amplitude can not be greater than upper limit ({upper_limit}V). Amplitude set to {upper_limit}V.")
-                amplitude_v = upper_limit
-            elif amplitude_v < lower_limit:
-                logger.info(f"Amplitude can not be lower than lower limit ({lower_limit}V). Amplitude set to {lower_limit}V.")
-                amplitude_v = lower_limit
+
+        scope = upper_limit - lower_limit
+        offset = 0
+
+        if amp_unit == "Vpp":
+            if amplitude_v > scope:
+                logger.info(f"Amplitude value is out of range. Amplitude set to {scope}V.")
+                amplitude_v = scope
+
+            if (val := upper_limit - 0.5 * amplitude_v) < 0:
+                offset = val
+            elif (val := lower_limit + 0.5 * amplitude_v) > 0:
+                offset = val
+
+            self.set_offset(channel, offset)
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
