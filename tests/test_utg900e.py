@@ -45,8 +45,25 @@ def test_set_output(mock_instrument):
 
 def test_get_output(mock_instrument):
     _, mock_inst = mock_instrument
+<<<<<<< Updated upstream
     gen = UTG900E()
     gen.inst = mock_inst
+=======
+    dev = UTG900E()
+    dev.inst = mock_inst
+<<<<<<< Updated upstream
+=======
+    dev.set_frequency(1, 1234.5)
+    mock_inst.write.assert_called_with(":CHANnel1:BASE:FREQuency 1234.5")
+
+def test_set_waveform(mock_instrument):
+    _, mock_inst = mock_instrument
+    dev = UTG900E()
+    dev.inst = mock_inst
+>>>>>>> Stashed changes
+    dev.set_wave(2, "SINE")
+    mock_inst.write.assert_called_with(":CHANnel2:BASE:WAVe SINE")
+>>>>>>> Stashed changes
 
     value_error_tests   = (-1, 3, 0)
     assert_calls_tests  = (1, 2)
