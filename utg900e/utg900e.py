@@ -6,10 +6,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class UTG900E:
-    channel_numbers = (1, 2)
-    available_amplitude_units = ("VPP", "VRMS")
-    available_modes = ("CONTINUE", "AM", "PM", "FM", "FSK", "Line", "Log")
-    available_waves = ("SINe", "SQUare", "PULSe", "RAMP", "ARB", "NOISe", "DC")
+    _channel_numbers = (1, 2)
+    _available_amplitude_units = ("VPP", "VRMS")
+    _available_modes = ("CONTINUE", "AM", "PM", "FM", "FSK", "Line", "Log")
+    _available_waves = ("SINe", "SQUare", "PULSe", "RAMP", "ARB", "NOISe", "DC")
+    _available_arb_sources = ("INTernal", "EXTernal")
+    _internal_arb_waves = (
+        "AbsSine", "AmpALT", "AttALT", "Cardiac", "CosH", "EEG", "EOG", "GaussianMonopulse", "GaussPulse", "LogNormal",
+        "Lorentz", "Pulseilogram", "Radar", "Sinc", "SineVer", "StairUD", "StepResp", "Trapezia", "TV", "VOICE",
+        "Log_up", "Log_down", "Tri_up", "Tri_down"
+    )
 
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
@@ -61,8 +67,8 @@ class UTG900E:
         :param state: Channels output state. False in OFF, True in ON
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if type(state) is not bool:
             raise TypeError(f"{bool} was expected as state type, instead {type(state)} has been provided")
         self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
@@ -78,8 +84,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2
         :return: Specified channel output status. 0 in OFF, 1 in ON
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:OUTPut?")
 
 
@@ -94,8 +100,8 @@ class UTG900E:
         :param inversion: Revers of the specified channel. True in ON, False in OFF
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if type(inversion) is not bool:
             raise TypeError(f"{bool} was expected as inversion type, instead {type(inversion)} has been provided")
         self.write(f":CHANnel{channel}:INVersion {"ON" if inversion else "OFF"}")
@@ -111,8 +117,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2
         :return: The specified channel reverse. 0 in OFF, 1 in ON
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:INVersion?")
 
 
@@ -127,8 +133,8 @@ class UTG900E:
         :param sync: Sync output of channel. 0 in OFF, 1 in ON. Only one sync output interface in the device, and can only open the sync output of one channel.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if type(sync) is not bool:
             raise TypeError(f"{bool} was expected as sync type, instead {type(sync)} has been provided")
         self.write(f":CHANnel{channel}:OUTPut:SYNC {"ON" if sync else "OFF"}")
@@ -144,8 +150,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2
         :return: The sync output of specified channel. 0 in OFF, 1 in ON.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:OUTPut:SYNC?")
 
 
@@ -160,8 +166,8 @@ class UTG900E:
         :param enable: Enable or disable limiting. 0 in OFF, 1 in ON.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if type(enable) is not bool:
             raise TypeError(f"{bool} was expected as enable type, instead {type(enable)} has been provided")
         self.write(f":CHANnel{channel}:LIMit:ENABle {"ON" if enable else "OFF"}")
@@ -177,8 +183,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2
         :return: The amplitude limiting status of specified channel. 0 in OFF, 1 in ON.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return int(self.query(f":CHANnel{channel}:LIMit:ENABle?"))
 
 
@@ -197,8 +203,8 @@ class UTG900E:
         upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
         lower_limit = -1 * upper_limit
         logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         if limit_v < lower_limit:
             logger.info(f"Try to set {limit_v}V as lower limit, but it can not be lower than {lower_limit}V. Lower limit set to {lower_limit}V.")
             limit_v = lower_limit
@@ -218,8 +224,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2
         :return: The lower limit voltage in Volts as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return round(float(self.query(f":CHANnel{channel}:LIMit:LOWer?")), 3)
 
 
@@ -241,8 +247,8 @@ class UTG900E:
         logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         # lower_limit = round(self.get_lower_limit(channel), 3)
         # upper_limit = round(self.get_upper_limit(channel), 3)
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         if limit_v <= lower_limit:
             logger.info(f"Try to set {limit_v}V as upper limit, but it can not be lower or equal to {lower_limit}V. Upper limit set to {lower_limit}V.")
             limit_v = lower_limit
@@ -262,8 +268,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: The upper limit voltage in Volts as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         return float(self.query(f":CHANnel{channel}:LIMit:UPPer?"))
 
 
@@ -278,11 +284,11 @@ class UTG900E:
         :param unit: The unit of output amplitude in specified channel. Available units are VPP and VRMS.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         unit = unit.upper()
-        if unit not in self.available_amplitude_units:
-            raise ValueError(f"Unit value should be in {self.available_amplitude_units}, instead value {unit} has been provided")
+        if unit not in self._available_amplitude_units:
+            raise ValueError(f"Unit value should be in {self._available_amplitude_units}, instead value {unit} has been provided")
         self.write(f":CHANnel{channel}:AMPLitude:UNIT {unit}")
 
 
@@ -296,8 +302,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: The unit of output amplitude in required channel as string.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:AMPLitude:UNIT?")
 
 
@@ -314,8 +320,8 @@ class UTG900E:
         """
         lower_resistance = 1
         higher_resistance = 1e4
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         if resistance_r < lower_resistance:
             logger.info(f"Try to set {resistance_r} as current load, but it can not be lower than 1Ω. Resistance set to 1Ω.")
         elif resistance_r > higher_resistance:
@@ -336,8 +342,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: The load resistance of specified channel as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         return float(self.query(f":CHANnel{channel}:LOAD?"))
 
 
@@ -352,10 +358,10 @@ class UTG900E:
         :param wave: Fundamental wave types, including Sine, Square, Pulse, Ramp, Arbitrary, Noise and DC.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided.")
-        if wave not in self.available_waves:
-            raise ValueError(f"Wave should be in available waves: {self.available_waves}.")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
+        if wave not in self._available_waves:
+            raise ValueError(f"Wave should be in available waves: {self._available_waves}.")
         self.write(f":CHANnel{channel}:BASE:WAVe {wave.upper()}")
 
 
@@ -369,8 +375,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Fundamental wave types of specified channel. "SINe", "PULse", etc.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:BASE:WAVe?")
 
 
@@ -385,8 +391,8 @@ class UTG900E:
         :param freq_hz: Frequency value, in 'Hz' unit. (1e-6s ~ current max. frequency of wave).
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:FREQuency {freq_hz}")
 
 
@@ -400,8 +406,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Modulated frequency of specified channel signal in 'Hz' as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return float(self.query(f":CHANnel{channel}:BASE:FREQuency?"))
 
 
@@ -418,8 +424,8 @@ class UTG900E:
         """
         higher_value = 1e6
         lower_value = 1.7e-08
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if period_s > higher_value:
             logger.info(f"Try to set {period_s}V as a period, but it can not grater than {higher_value}V. Period set to {higher_value}V.")
             period_s = higher_value
@@ -439,8 +445,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2
         :return: Period of specified channel, using scientific notation to return.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return float(self.query(f":CHANnel{channel}:BASE:PERiod?"))
 
 
@@ -457,8 +463,8 @@ class UTG900E:
         """
         max_phase_deg = 360
         min_phase_deg = -360
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if phase_deg > max_phase_deg:
             logger.info(f"Try to set {phase_deg}V as a phase, but it can not grater than {max_phase_deg}V. Phase set to {max_phase_deg}V.")
             phase_deg = max_phase_deg
@@ -478,8 +484,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Output phase of specified channel as a float number in “°” unit, range of -360~360.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return round(float(self.query(f":CHANnel{channel}:BASE:PHAse?")), 2)
 
 
@@ -494,8 +500,8 @@ class UTG900E:
         :param amplitude_v: Voltage in Volts. Unit is the specified one of current channel. 1mVpp ~ is the max.output in the current load condition. When the current unit is VPP, the current max.load=current load*20/(50+current load)
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
 
         amp_unit = self.get_amplitude_unit(channel)
         wave = self.get_wave(channel)
@@ -515,12 +521,10 @@ class UTG900E:
             if amplitude_v > scope:
                 logger.info(f"Amplitude value is out of range. Amplitude set to {scope}V.")
                 amplitude_v = scope
-
             if (val := upper_limit - 0.5 * amplitude_v) < 0:
                 offset = val
             elif (val := lower_limit + 0.5 * amplitude_v) > 0:
                 offset = val
-
             self.set_offset(channel, offset)
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
@@ -536,8 +540,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Output amplitude of specified channel as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return float(self.query(f":CHANnel{channel}:BASE:AMPLitude?"))
 
 
@@ -555,8 +559,8 @@ class UTG900E:
         :param offset_v: Voltage, in "V" unit. Range of 0~±max.DC of current load.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:OFFSet {offset_v}")
 
 
@@ -570,8 +574,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: DC output offset of specified channel as a float number in "V" unit.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:BASE:OFFSet?")
 
 
@@ -586,8 +590,8 @@ class UTG900E:
         :param high_v: Voltage, in "V" unit.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:HIGH {high_v}")
 
 
@@ -601,8 +605,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: High signal output value of specified channel as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:BASE:HIGH?")
 
 
@@ -617,8 +621,8 @@ class UTG900E:
         :param low_v: Voltage, in "V" unit.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:LOW {low_v}")
 
 
@@ -632,8 +636,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Low signal output value of specified channel as a float number.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:BASE:LOW?")
 
 
@@ -648,8 +652,8 @@ class UTG900E:
         :param duty_percent: Duty ratio, in “%” unit, range of 0~100.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if not (0 <= duty_percent <= 100):
             raise ValueError("Duty must be 0–100%")
         self.write(f":CHANnel{channel}:BASE:DUTY {duty_percent}")
@@ -665,8 +669,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Duty ratio of signal output in specified channel in "%" unit.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:BASE:DUTY?")
 
 
@@ -681,8 +685,8 @@ class UTG900E:
         :param symmetry_percent: Symmetry, in “%” unit, range of 0~100.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if not (0 <= symmetry_percent <= 100):
             raise ValueError("Symmetry must be 0–100%")
         self.write(f":CHANnel{channel}:RAMP:SYMMetry {symmetry_percent}")
@@ -698,8 +702,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Signal output symmetry of ramp wave in specified channel in percents.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:RAMP:SYMMetry?")
 
 
@@ -714,8 +718,8 @@ class UTG900E:
         :param rise_s: Rising edge pulse width, in “S” unit.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:PULSe:RISe {rise_s}")
 
 
@@ -729,8 +733,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Rising edge pulse width of signal pulse wave in specified channel as a float number in seconds.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:PULSe:RISe?")
 
 
@@ -745,8 +749,8 @@ class UTG900E:
         :param fall_s: Falling edge pulse width, in “S” unit.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:PULSe:FALL {fall_s}")
 
 
@@ -760,8 +764,8 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Falling edge pulse width of signal pulse wave in specified channel as a float number in seconds.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:PULSe:FALL?")
 
 
@@ -776,8 +780,8 @@ class UTG900E:
         :param mode: Mode of signal in specified channel.
         :return: None
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:MODe {mode.upper()}")
 
 
@@ -791,9 +795,77 @@ class UTG900E:
         :param channel: Channel No. Value 1, 2.
         :return: Signal types of specified channel.
         """
-        if channel not in self.channel_numbers:
-            raise ValueError(f"Channel value should be in {self.channel_numbers}, instead value {channel} has been provided")
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         return self.query(f":CHANnel{channel}:MODe?")
+
+
+    def set_arb_source(self, channel: int, source="INTernal") -> None:
+        """
+         Function
+            Set the arbitrary wave source of specified channel.
+         Example
+            gen.set_arb_source(1, "EXTernal") - Set the arbitrary wave source of channel 1 to be external.
+
+        :param channel: Channel No. Value 1, 2.
+        :param source: Arbitrary wave source of specified channel, Internal and External.
+        :return: None
+        """
+        # source = source.upper()
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
+        if source not in self._available_arb_sources:
+            raise ValueError(f"Arb source should be in {self._available_arb_sources}, instead {source} has been provided")
+        self.write(f":CHANnel{channel}:ARB:SOURce {source}")
+
+
+    def get_arb_source(self, channel: int) -> str:
+        """
+         Function
+            Get the arbitrary wave source of specified channel.
+         Example
+            gen.get_arb_source(1) - Get the arbitrary wave source of channel 1.
+
+        :param channel: Channel No. Value 1, 2.
+        :return: Returns arb wave source. INTernal or EXTernal
+        """
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
+        return self.query(f":CHANnel{channel}:ARB:SOURce?")
+
+
+    def set_arb_wave(self, channel: int, wave: str) -> None:
+        """
+         Function
+            Set the specified arb wave using available waves.
+         Example
+            gen.set_arb_wave(1, "Radar") - Set the channel 1 to load the arbitrary wave Radar, stored in signal source.
+
+        List of available waves:
+        "AbsSine", "AmpALT", "AttALT", "Cardiac", "CosH", "EEG", "EOG", "GaussianMonopulse", "GaussPulse", "LogNormal",
+        "Lorentz", "Pulseilogram", "Radar", "Sinc", "SineVer", "StairUD", "StepResp", "Trapezia", "TV", "VOICE",
+        "Log_up", "Log_down", "Tri_up", "Tri_down"
+
+        :param channel: Channel No. Value 1, 2.
+        :param wave: Arbitrary wave stored in signal source. Available waves are shown above.
+        :return: None.
+        """
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
+        if wave not in self._internal_arb_waves:
+            raise ValueError()
+        self.write(f":CHANnel{channel}:ARB:INDex {self._internal_arb_waves.index(wave)}")
+
+
+    def get_arb_wave(self, channel: int) -> str:
+        """
+        :param channel:
+        :return:
+        """
+        if channel not in self._channel_numbers:
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
+        return self._internal_arb_waves[int(float(self.query(f":CHANnel{channel}:ARB:INDex?")))]
+
 
     # --- Universal signal setting methods ---
 
@@ -816,6 +888,12 @@ class UTG900E:
 
         self.set_mode(channel, mode)
         self.set_wave(channel, wave)
+
+        if wave == "ARB":
+            if "arb_source" in kwargs:
+                self.set_arb_source(channel, kwargs["arb_source"])
+            if "wave_file" in kwargs:
+                self.set_arb_wave(channel, kwargs["wave_file"])
 
         if "dc" in kwargs:
             self.set_low(channel, kwargs["dc"] - min_ac_div2_v)
@@ -927,6 +1005,26 @@ class UTG900E:
         :return: None
         """
         self.configure_waveform(channel, waveform="PULSE", **kwargs)
+
+    def configure_arb(self, channel: int, **kwargs):
+        """
+        Method for arb waveform configuration.
+        \n
+        Available parameters in **kwargs:
+        \t
+        - wave_source (Internal or External),
+        - wave_file,
+        - freq (Hz) or period (s),
+        - amp_unit ('Vpp' or 'Vrms'), amp (V) and offset (V) or
+        - high (V) and low (V),
+        - phase (deg).
+
+        :param channel: Channel No. Value 1, 2.
+        :param kwargs: Dict with parameters.
+        :return: None
+        """
+        self.configure_waveform(channel, waveform="ARB", **kwargs)
+
 
     def configure_dc(self, channel: int, **kwargs):
         """
