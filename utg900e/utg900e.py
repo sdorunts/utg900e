@@ -9,13 +9,45 @@ class UTG900E:
     _channel_numbers = (1, 2)
     _available_amplitude_units = ("VPP", "VRMS")
     _available_modes = ("CONTINUE", "AM", "PM", "FM", "FSK", "Line", "Log")
-    _available_waves = ("SINe", "SQUare", "PULSe", "RAMP", "ARB", "NOISe", "DC")
-    _available_arb_sources = ("INTernal", "EXTernal")
+    _available_waves = ("SINE", "SQUARE", "PULSE", "RAMP", "ARB", "NOISE", "DC")
+    _available_arb_sources = ("INTERNAL", "EXTERNAL")
     _internal_arb_waves = (
         "AbsSine", "AmpALT", "AttALT", "Cardiac", "CosH", "EEG", "EOG", "GaussianMonopulse", "GaussPulse", "LogNormal",
         "Lorentz", "Pulseilogram", "Radar", "Sinc", "SineVer", "StairUD", "StepResp", "Trapezia", "TV", "VOICE",
         "Log_up", "Log_down", "Tri_up", "Tri_down"
     )
+    _vpp_vrms_coeff_for_waves = {
+        'SINe': {'vpp_to_vrms': 0.35355, 'vrms_to_vpp': 2.8284542497525105},
+        'SQUare': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
+        'PULSe': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
+        'RAMP': {'vpp_to_vrms': 0.2887, 'vrms_to_vpp': 3.4638032559750607},
+        'AbsSine': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
+        'AmpALT': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
+        'AttALT': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
+        'Cardiac': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
+        'CosH': {'vpp_to_vrms': 0.3323, 'vrms_to_vpp': 3.009328919650918},
+        'EEG': {'vpp_to_vrms': 0.15025, 'vrms_to_vpp': 6.655574043261232},
+        'EOG': {'vpp_to_vrms': 0.1407, 'vrms_to_vpp': 7.107320540156361},
+        'GaussianMonopulse': {'vpp_to_vrms': 0.36920000000000003, 'vrms_to_vpp': 2.7085590465872156},
+        'GaussPulse': {'vpp_to_vrms': 0.39275000000000004, 'vrms_to_vpp': 2.546148949713558},
+        'LogNormal': {'vpp_to_vrms': 0.1765, 'vrms_to_vpp': 5.6657223796034},
+        'Lorentz': {'vpp_to_vrms': 0.15489999999999998, 'vrms_to_vpp': 6.45577792123951},
+        'Pulseilogram': {'vpp_to_vrms': 0.27080000000000004, 'vrms_to_vpp': 3.692762186115214},
+        'Radar': {'vpp_to_vrms': 0.4473, 'vrms_to_vpp': 2.23563603845294},
+        'Sinc': {'vpp_to_vrms': 0.3806, 'vrms_to_vpp': 2.627430373095113},
+        'SineVer': {'vpp_to_vrms': 0.4667, 'vrms_to_vpp': 2.142704092564817},
+        'StairUD': {'vpp_to_vrms': 0.31675, 'vrms_to_vpp': 3.1570639305445933},
+        'StepResp': {'vpp_to_vrms': 0.45095, 'vrms_to_vpp': 2.2175407473112316},
+        'Trapezia': {'vpp_to_vrms': 0.32475, 'vrms_to_vpp': 3.079291762894534},
+        'TV': {'vpp_to_vrms': 0.25070000000000003, 'vrms_to_vpp': 3.9888312724371757},
+        'VOICE': {'vpp_to_vrms': 0.3227, 'vrms_to_vpp': 3.098853424233034},
+        'Log_up': {'vpp_to_vrms': 0.4157, 'vrms_to_vpp': 2.405580947798893},
+        'Log_down': {'vpp_to_vrms': 0.37985, 'vrms_to_vpp': 2.6326181387389758},
+        'Tri_up': {'vpp_to_vrms': 0.40225, 'vrms_to_vpp': 2.4860161591050343},
+        'Tri_down': {'vpp_to_vrms': 0.16885, 'vrms_to_vpp': 5.922416345869115},
+        'NOISe': {'vpp_to_vrms': 0.16885, 'vrms_to_vpp': 5.922416345869115},
+        'DC': {'vpp_to_vrms': 1.0, 'vrms_to_vpp': 1.0}
+    }
 
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
@@ -360,9 +392,10 @@ class UTG900E:
         """
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
+        wave = wave.upper()
         if wave not in self._available_waves:
             raise ValueError(f"Wave should be in available waves: {self._available_waves}.")
-        self.write(f":CHANnel{channel}:BASE:WAVe {wave.upper()}")
+        self.write(f":CHANnel{channel}:BASE:WAVe {wave}")
 
 
     def get_wave(self, channel: int) -> str:
@@ -505,6 +538,10 @@ class UTG900E:
 
         amp_unit = self.get_amplitude_unit(channel)
         wave = self.get_wave(channel)
+        if wave == "ARB":
+            wave = self.get_arb_wave(channel)
+        vrms_to_vpp_coefficient = self._vpp_vrms_coeff_for_waves[wave]["vrms_to_vpp"] if amp_unit == "VRMS" else 1
+        vpp_to_vrms_coefficient = self._vpp_vrms_coeff_for_waves[wave]["vpp_to_vrms"] if amp_unit == "VRMS" else 1
 
         if self.is_limit_enable(channel):
             upper_limit = self.get_upper_limit(channel)
@@ -515,17 +552,20 @@ class UTG900E:
             lower_limit = -1 * upper_limit
 
         scope = upper_limit - lower_limit
-        offset = 0
+        amplitude_v *= vrms_to_vpp_coefficient
+        if amplitude_v > scope:
+            logger.info(f"Amplitude value is out of range. Amplitude set to {scope * vpp_to_vrms_coefficient}V.")
+            amplitude_v = scope
 
-        if amp_unit == "Vpp":
-            if amplitude_v > scope:
-                logger.info(f"Amplitude value is out of range. Amplitude set to {scope}V.")
-                amplitude_v = scope
-            if (val := upper_limit - 0.5 * amplitude_v) < 0:
-                offset = val
-            elif (val := lower_limit + 0.5 * amplitude_v) > 0:
-                offset = val
-            self.set_offset(channel, offset)
+        offset = 0
+        high = 0.5 * amplitude_v
+        low = -0.5 * amplitude_v
+        if (val := upper_limit - high) < 0:
+            offset = val
+        elif (val := lower_limit - low) > 0:
+            offset = val
+        self.set_offset(channel, offset)
+        amplitude_v *= vpp_to_vrms_coefficient
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
@@ -811,11 +851,11 @@ class UTG900E:
         :param source: Arbitrary wave source of specified channel, Internal and External.
         :return: None
         """
-        # source = source.upper()
+        source = source.upper()
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if source not in self._available_arb_sources:
-            raise ValueError(f"Arb source should be in {self._available_arb_sources}, instead {source} has been provided")
+            raise ValueError(f"Arb source should be in {self._available_arb_sources}, instead '{source}' has been provided")
         self.write(f":CHANnel{channel}:ARB:SOURce {source}")
 
 
