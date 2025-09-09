@@ -382,7 +382,7 @@ class UTG900E:
         """
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
-        return round(float(self.query(f":CHANnel{channel}:LIMit:LOWer?")), 3)
+        return self._round_math(float(self.query(f":CHANnel{channel}:LIMit:LOWer?")), 3)
 
 
     def set_upper_limit(self, channel: int, limit_v: float) -> None:
@@ -565,7 +565,7 @@ class UTG900E:
         """
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
-        return float(self.query(f":CHANnel{channel}:BASE:FREQuency?"))
+        return self.query(f":CHANnel{channel}:BASE:FREQuency?")
 
 
     def set_period(self, channel: int, period_s: float):
@@ -643,7 +643,7 @@ class UTG900E:
         """
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
-        return round(float(self.query(f":CHANnel{channel}:BASE:PHAse?")), 2)
+        return self._round_math(float(self.query(f":CHANnel{channel}:BASE:PHAse?")), 2)
 
 
     def set_amplitude(self, channel: int, amplitude_v: float) -> None:
@@ -740,7 +740,7 @@ class UTG900E:
         """
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
-        return self.query(f":CHANnel{channel}:BASE:OFFSet?")
+        return self._round_math(float(self.query(f":CHANnel{channel}:BASE:OFFSet?")), 4)
 
 
     def set_high(self, channel: int, high_v: float) -> None:
