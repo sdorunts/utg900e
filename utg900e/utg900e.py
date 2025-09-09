@@ -1,21 +1,49 @@
 import pyvisa
 import logging
+import colorlog
+from decimal import Decimal, ROUND_HALF_UP, ROUND_DOWN
 
 # Logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
+
+DEEP_DEBUG = logging.DEBUG + 1
+TEST_DEBUG = logging.DEBUG + 2
+
+DEEP_INFO = logging.INFO + 1
+GENERAL_INFO = logging.INFO + 2
+MINIMUM_INFO = logging.INFO + 3
+
+logging.addLevelName(DEEP_DEBUG, "DEEP_DEBUG")
+logging.addLevelName(TEST_DEBUG, "TEST_DEBUG")
+
+logger = colorlog.getLogger()
+logger.setLevel(TEST_DEBUG)
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(colorlog.ColoredFormatter(
+    '%(log_color)s%(levelname)s:%(name)s:%(message)s',
+    log_colors={
+        'LOW_DEBUG': 'cyan',
+        'HIGH_DEBUG': 'white',
+        'INFO': 'green',
+        'WARNING': 'yellow',
+        'ERROR': 'red',
+        'CRITICAL': 'red,bg_white',
+    }
+))
+
+logger.addHandler(handler)
 
 class UTG900E:
     _channel_numbers = (1, 2)
     _available_amplitude_units = ("VPP", "VRMS")
     _available_modes = ("CONTINUE", "AM", "PM", "FM", "FSK", "Line", "Log")
-    _available_waves = ("SINE", "SQUARE", "PULSE", "RAMP", "ARB", "NOISE", "DC")
+    _available_waves = ("SINe", "SQUare", "PULSe", "RAMP", "ARB", "NOISe", "DC")
     _available_arb_sources = ("INTERNAL", "EXTERNAL")
-    _internal_arb_waves = (
-        "AbsSine", "AmpALT", "AttALT", "Cardiac", "CosH", "EEG", "EOG", "GaussianMonopulse", "GaussPulse", "LogNormal",
+    _internal_arb_waves = ("AbsSine", "AmpALT", "AttALT", "Cardiac", "CosH", "EEG", "EOG", "GaussianMonopulse", "GaussPulse", "LogNormal",
         "Lorentz", "Pulseilogram", "Radar", "Sinc", "SineVer", "StairUD", "StepResp", "Trapezia", "TV", "VOICE",
-        "Log_up", "Log_down", "Tri_up", "Tri_down"
-    )
+        "Log_up", "Log_down", "Tri_up", "Tri_down")
     _vpp_vrms_coeff_for_waves = {
         'SINe': {'vpp_to_vrms': 0.35355, 'vrms_to_vpp': 2.8284542497525105},
         'SQUare': {'vpp_to_vrms': 0.5, 'vrms_to_vpp': 2.0},
@@ -185,7 +213,7 @@ class UTG900E:
     def connect(self, device_addr):
         try:
             self.inst = self.rm.open_resource(device_addr)
-            logger.info(f"Connected to {device_addr}")
+            logger.info(MINIMUM_INFO, f"Connected to {device_addr}")
         except Exception as e:
             logger.error(f"Connection error: {e}")
             raise
@@ -193,14 +221,14 @@ class UTG900E:
     def close(self):
         if self.inst:
             self.inst.close()
-            logger.info("Connection closed.")
+            logger.info(MINIMUM_INFO, "Connection closed.")
 
     def write(self, command):
-        logger.debug(f"→ {command}")
+        logger.debug(DEEP_DEBUG, f"→ {command}")
         self.inst.write(command)
 
     def query(self, command):
-        logger.debug(f"→ {command}")
+        logger.debug(DEEP_DEBUG, f"→ {command}")
         return self.inst.query(command)
 
     def identify(self):
@@ -228,6 +256,7 @@ class UTG900E:
         if type(state) is not bool:
             raise TypeError(f"{bool} was expected as state type, instead {type(state)} has been provided")
         self.write(f":CHANnel{channel}:OUTPut {'ON' if state else 'OFF'}")
+        # logger.info(GENERAL_INFO, "")
 
 
     def get_output(self, channel: int) -> int:
@@ -358,16 +387,17 @@ class UTG900E:
         load = self.get_load(channel)
         upper_limit = 10 if load == 10000 else self._round_math(10 * load / (50 + load), 3)
         lower_limit = -1 * upper_limit
-        logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
+        logger.debug(TEST_DEBUG, f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         if limit_v < lower_limit:
-            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be lower than {lower_limit}V. Lower limit set to {lower_limit}V.")
+            logger.info(DEEP_INFO, f"Try to set {limit_v}V as lower limit, but it can not be lower than {lower_limit}V. Lower limit set to {lower_limit}V.")
             limit_v = lower_limit
         elif limit_v >= upper_limit:
-            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be greater than {upper_limit}V. Lower limit set to {upper_limit}V.")
+            logger.info(DEEP_INFO, f"Try to set {limit_v}V as lower limit, but it can not be greater than {upper_limit}V. Lower limit set to {upper_limit}V.")
             limit_v = upper_limit
         self.write(f":CHANnel{channel}:LIMit:LOWer {limit_v}")
+        logger.info(GENERAL_INFO, f"Lower limit set to {limit_v}")
 
 
     def get_lower_limit(self, channel: int) -> float:
@@ -399,16 +429,17 @@ class UTG900E:
         load = self.get_load(channel)
         upper_limit = self._limit_calc(load)
         lower_limit = -1 * upper_limit
-        logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
+        logger.debug(TEST_DEBUG, f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         if limit_v <= lower_limit:
-            logger.info(f"Try to set {limit_v}V as upper limit, but it can not be lower or equal to {lower_limit}V. Upper limit set to {lower_limit}V.")
+            logger.info(DEEP_INFO, f"Try to set {limit_v}V as upper limit, but it can not be lower or equal to {lower_limit}V. Upper limit set to {lower_limit}V.")
             limit_v = lower_limit
         elif limit_v > upper_limit:
-            logger.info(f"Try to set {limit_v}V as upper limit, but it can not be greater than {upper_limit}V. Upper limit set to {upper_limit}V.")
+            logger.info(DEEP_INFO, f"Try to set {limit_v}V as upper limit, but it can not be greater than {upper_limit}V. Upper limit set to {upper_limit}V.")
             limit_v = upper_limit
         self.write(f":CHANnel{channel}:LIMit:UPPer {limit_v}")
+        logger.info(GENERAL_INFO, f"Lower limit set to {limit_v}")
 
 
     def get_upper_limit(self, channel: int) -> float:
@@ -443,6 +474,7 @@ class UTG900E:
         if unit not in self._available_amplitude_units:
             raise ValueError(f"Unit value should be in {self._available_amplitude_units}, instead value {unit} has been provided")
         self.write(f":CHANnel{channel}:AMPLitude:UNIT {unit}")
+        logger.info(GENERAL_INFO, f"Amplitude unit set to {unit}")
 
 
     def get_amplitude_unit(self, channel: int) -> str:
@@ -476,13 +508,13 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.\n")
         if resistance_r < lower_resistance:
-            logger.info(f"Try to set {resistance_r} as current load, but it can not be lower than {lower_resistance}. Resistance set to {lower_resistance}Ω.\n")
+            logger.info(DEEP_INFO, f"Try to set {resistance_r} as current load, but it can not be lower than {lower_resistance}. Resistance set to {lower_resistance}Ω.\n")
         elif resistance_r > higher_resistance:
-            logger.info(f"Try to set {resistance_r} as current load, but it can not be grater than {higher_resistance}. Resistance set to {higher_resistance}Ω.\n")
+            logger.info(DEEP_INFO, f"Try to set {resistance_r} as current load, but it can not be grater than {higher_resistance}. Resistance set to {higher_resistance}Ω.\n")
         self.write(f":CHANnel{channel}:LOAD {resistance_r}")
         lower_limit = self._round_math(self.get_lower_limit(channel), 3)
         upper_limit = self._round_math(self.get_upper_limit(channel), 3)
-        logger.info(f"Load changed to {resistance_r}. Lower limit and upper limit equals to {lower_limit}V and {upper_limit}V respectively.\n")
+        logger.info(GENERAL_INFO, f"Load changed to {resistance_r}. Lower limit and upper limit equals to {lower_limit}V and {upper_limit}V respectively.\n")
 
 
     def get_load(self, channel: int) -> float:
@@ -517,6 +549,7 @@ class UTG900E:
         if wave not in (available_wave.upper() for available_wave in self._available_waves):
             raise ValueError(f"Wave should be in available waves: {self._available_waves}.")
         self.write(f":CHANnel{channel}:BASE:WAVe {wave}")
+        logger.info(GENERAL_INFO, f"Wave has been set to {wave}.\n")
 
 
     def get_wave(self, channel: int) -> str:
@@ -548,6 +581,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:FREQuency {freq_hz}")
+        logger.info(GENERAL_INFO, f"Frequency has been set to {freq_hz}.\n")
 
 
     def get_frequency(self, channel: int):
@@ -581,12 +615,13 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if period_s > higher_value:
-            logger.info(f"Try to set {period_s}V as a period, but it can not grater than {higher_value}V. Period set to {higher_value}V.")
+            logger.info(DEEP_INFO, f"Try to set {period_s}V as a period, but it can not grater than {higher_value}V. Period set to {higher_value}V.")
             period_s = higher_value
         elif period_s < lower_value:
-            logger.info(f"Try to set {period_s}V as a period, but it can not lower than {lower_value}V. Period set to {lower_value}V.")
+            logger.info(DEEP_INFO, f"Try to set {period_s}V as a period, but it can not lower than {lower_value}V. Period set to {lower_value}V.")
             period_s = lower_value
         self.write(f":CHANnel{channel}:BASE:PERiod {period_s}")
+        logger.info(GENERAL_INFO, f"Period has been set to {period_s}.\n")
 
 
     def get_period(self, channel: int) -> float:
@@ -620,13 +655,13 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         if phase_deg > max_phase_deg:
-            logger.info(f"Try to set {phase_deg}V as a phase, but it can not grater than {max_phase_deg}V. Phase set to {max_phase_deg}V.")
+            logger.info(DEEP_INFO, f"Try to set {phase_deg}V as a phase, but it can not grater than {max_phase_deg}V. Phase set to {max_phase_deg}V.")
             phase_deg = max_phase_deg
         if phase_deg < min_phase_deg:
-            logger.info(f"Try to set {phase_deg}V as a phase, but it can not lower than {min_phase_deg}V. Phase set to {min_phase_deg}V.")
+            logger.info(DEEP_INFO, f"Try to set {phase_deg}V as a phase, but it can not lower than {min_phase_deg}V. Phase set to {min_phase_deg}V.")
             phase_deg = min_phase_deg
         self.write(f":CHANnel{channel}:BASE:PHAse {phase_deg}")
-
+        logger.info(GENERAL_INFO, f"Phase has been set to {phase_deg}.")
 
     def get_phase(self, channel: int) -> float:
         """
@@ -675,7 +710,7 @@ class UTG900E:
         scope = upper_limit - lower_limit
         amplitude_v *= vrms_to_vpp_coefficient
         if amplitude_v > scope:
-            logger.info(f"Amplitude value {amplitude_v} is out of range. Amplitude set to {scope * vpp_to_vrms_coefficient}V.")
+            logger.info(DEEP_INFO, f"Amplitude value {amplitude_v} is out of range. Amplitude set to {scope * vpp_to_vrms_coefficient}V.")
             amplitude_v = scope
 
         if (val := upper_limit - 0.5 * amplitude_v) < 0:
@@ -690,6 +725,7 @@ class UTG900E:
         amplitude_v = self._truncate_decimal(amplitude_v, 3)
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
+        logger.info(GENERAL_INFO, f"Amplitude has been set to {amplitude_v}{amp_unit}")
 
 
     def get_amplitude(self, channel: int) -> float:
@@ -724,6 +760,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:OFFSet {offset_v}")
+        logger.info(GENERAL_INFO, f"Offset has been set to {offset_v}")
 
 
     def get_offset(self, channel: int) -> float:
@@ -755,6 +792,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:HIGH {high_v}")
+        logger.info(GENERAL_INFO, f"High has been set to {high_v}")
 
 
     def get_high(self, channel: int) -> float:
@@ -786,6 +824,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:BASE:LOW {low_v}")
+        logger.info(GENERAL_INFO, f"Low has been set to {low_v}")
 
 
     def get_low(self, channel: int) -> float:
@@ -819,6 +858,7 @@ class UTG900E:
         if not (0 <= duty_percent <= 100):
             raise ValueError("Duty must be 0–100%")
         self.write(f":CHANnel{channel}:BASE:DUTY {duty_percent}")
+        logger.info(GENERAL_INFO, f"Duty has been set to {duty_percent}")
 
 
     def get_duty(self, channel: int) -> float:
@@ -852,6 +892,7 @@ class UTG900E:
         if not (0 <= symmetry_percent <= 100):
             raise ValueError("Symmetry must be 0–100%")
         self.write(f":CHANnel{channel}:RAMP:SYMMetry {symmetry_percent}")
+        logger.info(GENERAL_INFO, f"Symmetry has been set to {symmetry_percent}")
 
 
     def get_symmetry(self, channel: int) -> float:
@@ -883,6 +924,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:PULSe:RISe {rise_s}")
+        logger.info(GENERAL_INFO, f"Rise time has been set to {rise_s}")
 
 
     def get_rise_time(self, channel: int) -> float:
@@ -914,6 +956,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:PULSe:FALL {fall_s}")
+        logger.info(GENERAL_INFO, f"Fall time has been set to {fall_s}")
 
 
     def get_fall_time(self, channel: int) -> float:
@@ -945,6 +988,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided")
         self.write(f":CHANnel{channel}:MODe {mode.upper()}")
+        logger.info(GENERAL_INFO, f"Mode has been set to {mode}")
 
 
     def get_mode(self, channel: int) -> str:
@@ -979,6 +1023,7 @@ class UTG900E:
         if source not in self._available_arb_sources:
             raise ValueError(f"Arb source should be in {self._available_arb_sources}, instead '{source}' has been provided")
         self.write(f":CHANnel{channel}:ARB:SOURce {source}")
+        logger.info(GENERAL_INFO, f"Arb source has been set to {source}")
 
 
     def get_arb_source(self, channel: int) -> str:
@@ -1017,6 +1062,7 @@ class UTG900E:
         if wave not in self._internal_arb_waves:
             raise ValueError()
         self.write(f":CHANnel{channel}:ARB:INDex {self._internal_arb_waves.index(wave)}")
+        logger.info(GENERAL_INFO, f"Arb wave has been set to {wave}")
 
 
     def get_arb_wave(self, channel: int) -> str:
