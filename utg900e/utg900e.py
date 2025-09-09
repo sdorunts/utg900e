@@ -48,15 +48,139 @@ class UTG900E:
         'NOISe': {'vpp_to_vrms': 0.16885, 'vrms_to_vpp': 5.922416345869115},
         'DC': {'vpp_to_vrms': 1.0, 'vrms_to_vpp': 1.0}
     }
+    _waves_min_max_freq = {
+        "SINe": {
+            "max_freq": 6e7,
+            "min_freq": 1e-06
+        },
+        "SQUare": {
+            "max_freq": 2e7,
+            "min_freq": 1e-06
+        },
+        "PULSe": {
+            "max_freq": 2e7,
+            "min_freq": 1e-06
+        },
+        "RAMP": {
+            "max_freq": 400000.0,
+            "min_freq": 1e-06
+        },
+        "AbsSine": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "AmpALT": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "AttALT": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Cardiac": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "CosH": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "EEG": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "EOG": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "GaussianMonopulse": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "GaussPulse": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "LogNormal": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Lorentz": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Pulseilogram": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Radar": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Sinc": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "SineVer": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "StairUD": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "StepResp": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Trapezia": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "TV": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "VOICE": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Log_up": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Log_down": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Tri_up": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "Tri_down": {
+            "max_freq": 1e7,
+            "min_freq": 1e-06
+        },
+        "NOISe": {
+            "max_freq": 1e-06,
+            "min_freq": 1e-06
+        },
+        "DC": {
+            "max_freq": 1e-06,
+            "min_freq": 1e-06
+        }
+    }
 
     def __init__(self, device_addr=None):
         self.rm = pyvisa.ResourceManager()
         self.inst = None
-        self._limit_calc = lambda x: 10 if x == 10000 else round(10 * x / (50 + x), 3)
+        self._limit_calc = lambda x: 10 if x == 10000 else self._round_math(10 * x / (50 + x), 3)
+        self._round_math = lambda number, digits=0: float(Decimal(str(number)).quantize(Decimal(f"1e-{digits}"), rounding=ROUND_HALF_UP))
+        self._truncate_decimal = lambda number, digits=0: float(Decimal(str(number)).quantize(Decimal(f"1e-{digits}"), rounding=ROUND_DOWN))
         if device_addr:
             self.connect(device_addr)
         else:
-            logger.warning("Device has not been connected: address hasn't been priveded.")
+            logger.warning("Device has not been connected: address hasn't been provided.")
 
     def connect(self, device_addr):
         try:
