@@ -356,7 +356,7 @@ class UTG900E:
         :return: None
         """
         load = self.get_load(channel)
-        upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
+        upper_limit = 10 if load == 10000 else self._round_math(10 * load / (50 + load), 3)
         lower_limit = -1 * upper_limit
         logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
         if channel not in self._channel_numbers:
@@ -365,7 +365,7 @@ class UTG900E:
             logger.info(f"Try to set {limit_v}V as lower limit, but it can not be lower than {lower_limit}V. Lower limit set to {lower_limit}V.")
             limit_v = lower_limit
         elif limit_v >= upper_limit:
-            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be greater or equal to {upper_limit}V. Lower limit set to {upper_limit}V.")
+            logger.info(f"Try to set {limit_v}V as lower limit, but it can not be greater than {upper_limit}V. Lower limit set to {upper_limit}V.")
             limit_v = upper_limit
         self.write(f":CHANnel{channel}:LIMit:LOWer {limit_v}")
 
@@ -398,11 +398,8 @@ class UTG900E:
         """
         load = self.get_load(channel)
         upper_limit = self._limit_calc(load)
-        # upper_limit = 10 if load == 10000 else round(10 * load / (50 + load), 3)
         lower_limit = -1 * upper_limit
         logger.info(f"Load: {load}, upper_limit: {upper_limit}, lower_limit: {lower_limit}")
-        # lower_limit = round(self.get_lower_limit(channel), 3)
-        # upper_limit = round(self.get_upper_limit(channel), 3)
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         if limit_v <= lower_limit:
@@ -477,15 +474,15 @@ class UTG900E:
         lower_resistance = 1
         higher_resistance = 1e4
         if channel not in self._channel_numbers:
-            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
+            raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.\n")
         if resistance_r < lower_resistance:
-            logger.info(f"Try to set {resistance_r} as current load, but it can not be lower than 1Ω. Resistance set to 1Ω.")
+            logger.info(f"Try to set {resistance_r} as current load, but it can not be lower than {lower_resistance}. Resistance set to {lower_resistance}Ω.\n")
         elif resistance_r > higher_resistance:
-            logger.info(f"Try to set {resistance_r} as current load, but it can not be grater than 10000Ω. Resistance set to 10000Ω.")
+            logger.info(f"Try to set {resistance_r} as current load, but it can not be grater than {higher_resistance}. Resistance set to {higher_resistance}Ω.\n")
         self.write(f":CHANnel{channel}:LOAD {resistance_r}")
-        lower_limit = round(self.get_lower_limit(channel), 3)
-        upper_limit = round(self.get_upper_limit(channel), 3)
-        logger.info(f"Load changed to {resistance_r}. Lower limit and upper limit equals to {lower_limit}V and {upper_limit}V respectively.")
+        lower_limit = self._round_math(self.get_lower_limit(channel), 3)
+        upper_limit = self._round_math(self.get_upper_limit(channel), 3)
+        logger.info(f"Load changed to {resistance_r}. Lower limit and upper limit equals to {lower_limit}V and {upper_limit}V respectively.\n")
 
 
     def get_load(self, channel: int) -> float:
@@ -517,7 +514,7 @@ class UTG900E:
         if channel not in self._channel_numbers:
             raise ValueError(f"Channel value should be in {self._channel_numbers}, instead value {channel} has been provided.")
         wave = wave.upper()
-        if wave not in self._available_waves:
+        if wave not in (available_wave.upper() for available_wave in self._available_waves):
             raise ValueError(f"Wave should be in available waves: {self._available_waves}.")
         self.write(f":CHANnel{channel}:BASE:WAVe {wave}")
 
@@ -678,18 +675,19 @@ class UTG900E:
         scope = upper_limit - lower_limit
         amplitude_v *= vrms_to_vpp_coefficient
         if amplitude_v > scope:
-            logger.info(f"Amplitude value is out of range. Amplitude set to {scope * vpp_to_vrms_coefficient}V.")
+            logger.info(f"Amplitude value {amplitude_v} is out of range. Amplitude set to {scope * vpp_to_vrms_coefficient}V.")
             amplitude_v = scope
 
-        offset = 0
-        high = 0.5 * amplitude_v
-        low = -0.5 * amplitude_v
-        if (val := upper_limit - high) < 0:
+        if (val := upper_limit - 0.5 * amplitude_v) < 0:
             offset = val
-        elif (val := lower_limit - low) > 0:
+        elif (val := lower_limit + 0.5 * amplitude_v) > 0:
             offset = val
+        else:
+            offset = 0
+
         self.set_offset(channel, offset)
         amplitude_v *= vpp_to_vrms_coefficient
+        amplitude_v = self._truncate_decimal(amplitude_v, 3)
 
         self.write(f":CHANnel{channel}:BASE:AMPLitude {amplitude_v}")
 
@@ -1047,7 +1045,7 @@ class UTG900E:
         - rise_time (s, for PULSE only)
         - fall_time (s, for PULSE only)Low-level commands
         """
-        min_ac_div2_v= 0.001
+        min_ac_div2_v= 0.001 # ПЕРЕНЕСТИ это в переменные _min_ac_div2_v
         wave = waveform.upper()
 
         self.set_mode(channel, mode)
