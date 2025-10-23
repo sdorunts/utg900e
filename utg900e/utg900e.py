@@ -237,6 +237,12 @@ class UTG900E:
     def reset(self):
         self.write("*RST")
 
+    def output_on(self, channel: int):
+        self.set_output(channel, True)
+
+    def output_off(self, channel: int):
+        self.set_output(channel, False)
+
     # --- Low-level commands (SCPI wrappers) ---
 
     def set_output(self, channel: int, state=True):
