@@ -23,8 +23,8 @@ pip install utg900e
 
 ### From Source
 ```bash
-git clone https://github.com/yourusername/utg900e-lib.git
-cd utg900e-lib
+git clone https://github.com/yourusername/utg900e.git
+cd utg900e
 pip install .
 ```
 
